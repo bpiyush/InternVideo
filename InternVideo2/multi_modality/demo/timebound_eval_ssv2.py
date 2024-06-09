@@ -101,6 +101,16 @@ if __name__ == "__main__":
     intern_model.eval()
     num_params(intern_model)
 
+    # Load CLIP post-pretrained model
+    load_clip = True
+    if load_clip:
+        print("Loading CLIP post-pretrained model")
+        clip_ppt_ckpt = '/work/piyush/pretrained_checkpoints/LargeModels/InternVideo/1B_clip.pth'
+        clip_ppt_ckpt = torch.load(clip_ppt_ckpt)
+        msg = intern_model.load_state_dict(clip_ppt_ckpt, strict=False)
+        print("Number of missing keys: ", len(msg.missing_keys))
+        print("Number of unexpected keys: ", len(msg.unexpected_keys))
+        print("Number of total keys in model: ", len(intern_model.state_dict().keys()))
 
     # Run on the entire dataset
     print("[:::] Running on the entire dataset")
