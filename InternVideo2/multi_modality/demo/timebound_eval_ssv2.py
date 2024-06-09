@@ -34,6 +34,8 @@ from demo_utils import (
     retrieve_text,
     _frame_from_video,
     setup_internvideo2,
+    frames2tensor,
+    compute_features,
 )
 
 
@@ -86,6 +88,9 @@ if __name__ == "__main__":
     assert os.path.exists(model_pth)
     config["model"]["vision_encoder"]["pretrained"] = model_pth
 
+    # config["num_frames"] = 8
+    # config['num_frames_test'] = 8
+
     # Define path to text encoder config
     text_encoder_config_path = os.path.join(repo_path, "configs/config_bert_large.json")
     assert os.path.exists(text_encoder_config_path)
@@ -118,6 +123,23 @@ if __name__ == "__main__":
         video_path_y = get_video_path(video_dir, row["id_y"])
         label_x = row["label_x"]
         label_y = row["label_y"]
+        video_paths = [video_path_x, video_path_y]
+        texts = [label_x, label_y]
+        with torch.no_grad():
+            sim = compute_features(
+                video_paths, texts, model=intern_model, config=config
+            )
+            sim = sim.cpu().numpy()
+        """
+        import ipdb; ipdb.set_trace()
+        video_x = cv2.VideoCapture(video_path_x)
+        frames_x = [x for x in _frame_from_video(video_x)]
+        video_y = cv2.VideoCapture(video_path_y)
+        frames_y = [x for x in _frame_from_video(video_y)]
+
+        frames_tensor = frames2tensor(frames_x, fnum=fn, target_size=(size_t, size_t))
+
+        import ipdb; ipdb.set_trace()
 
         # Compute video to text similarity for video_x
         video = cv2.VideoCapture(video_path_x)
@@ -136,9 +158,11 @@ if __name__ == "__main__":
             texts, probs_y = retrieve_text(
                 frames, text_candidates, model=intern_model, topk=2, config=config,
             )
-        
+
         # Get text to video similarity matrix
         sim = np.stack([probs_x, probs_y], axis=1)
+        """
+        
         text_corrects.append(text_correct(sim))
         video_corrects.append(video_correct(sim))
         group_corrects.append(group_correct(sim))

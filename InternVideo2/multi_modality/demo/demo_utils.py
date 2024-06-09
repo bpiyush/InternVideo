@@ -76,6 +76,40 @@ def retrieve_text(frames,
     return ret_texts, probs.float().numpy()[0]
 
 
+def compute_features(
+        video_paths, 
+        texts, 
+        model,
+        topk:int=5,
+        config: dict={},
+        device=torch.device('cuda'),
+    ):
+
+    vlm = model
+    vlm = vlm.to(device)
+
+    videos = [cv2.VideoCapture(x) for x in video_paths]
+    frames = [[x for x in _frame_from_video(v)] for v in videos]
+    fn = config.get('num_frames', 8)
+    tsize = config.get('size_t', 224)
+    frames_tensor = [
+        frames2tensor(f, fnum=fn, target_size=(tsize, tsize), device=device) \
+            for f in frames
+    ]
+    vid_feat = [vlm.get_vid_feat(f) for f in frames_tensor]
+    vid_feat = torch.cat(vid_feat, 0)
+    # frames_tensor = torch.cat(frames_tensor, 0)
+    # vid_feat = vlm.get_vid_feat(frames_tensor)
+
+    text_feat_d = {}
+    text_feat_d = get_text_feat_dict(texts, vlm, text_feat_d)
+    text_feats = [text_feat_d[t] for t in texts]
+    text_feats_tensor = torch.cat(text_feats, 0)
+
+    sim = text_feats_tensor @ vid_feat.T
+    return sim
+
+
 def setup_internvideo2(config: dict):
     if "bert" in config.model.text_encoder.name:
         tokenizer = BertTokenizer.from_pretrained(config.model.text_encoder.pretrained, local_files_only=False)
