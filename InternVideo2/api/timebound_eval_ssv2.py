@@ -71,7 +71,51 @@ def get_check_for_row(row):
 
 
 if __name__ == "__main__":
-    model, _, config = load_model()
+
+    init_with_clip = False
+    if init_with_clip:
+        # THIS IS TOO COMPLICATED TO SETUP
+        # SKIPPING FOR NOW
+
+        from multi_modality.demo.config import (
+            Config,
+            eval_dict_leaf,
+        )
+        from multi_modality.tasks_clip.shared_utils import setup_model
+        from multi_modality.models.internvideo2_clip import InternVideo2_CLIP
+    
+        config = Config.from_file('InternVideo2/multi_modality/scripts/evaluation/clip/zero_shot/1B/config_ssv2_mc.py')
+        config = eval_dict_leaf(config)
+
+        # Updates
+        # config["model"]["tokenizer_path"] = "/work/piyush/pretrained_checkpoints/LargeModels/InternVideo/chinese-alpaca-lora-7b"
+        ckpt_root = "/work/piyush/pretrained_checkpoints/LargeModels/InternVideo/"
+        ckpt_name = "InternVideo2-stage2_1b-224p-f4.pt"
+        model_pth = os.path.join(ckpt_root, ckpt_name)
+        config['pretrained_path'] = model_pth
+
+
+        model_cls = eval(config.model.get('model_cls', 'InternVideo2_CLIP'))
+        model, _ = setup_model(
+            config,
+            model_cls=model_cls,
+            pretrain=False,
+            find_unused_parameters=False,
+        )
+        raise NotImplementedError
+        import ipdb; ipdb.set_trace()
+
+        # Ref: https://github.com/OpenGVLab/InternVideo/issues/114
+        ckpt_root = "/work/piyush/pretrained_checkpoints/LargeModels/InternVideo/"
+        model_pth = os.path.join(ckpt_root, "1B_clip.pth")
+        assert os.path.exists(model_pth)
+        ckpt = torch.load(model_pth)
+        msg = model.load_state_dict(ckpt, strict=False)
+        import ipdb; ipdb.set_trace()
+    else:
+        ckpt_name = "InternVideo2-stage2_1b-224p-f4.pt"
+        model, _, config = load_model(ckpt_name=ckpt_name)
+
 
     # Load data
     split = "validation"

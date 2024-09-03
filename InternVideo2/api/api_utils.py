@@ -8,7 +8,7 @@ def num_params(model):
     print(f"Number of parameters in {type(model).__name__}: {np.round(n, 3)}M")
 
 
-def load_model():
+def load_model(ckpt_name="InternVideo2-stage2_1b-224p-f4.pt"):
 
     import sys
     repo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)))
@@ -31,7 +31,7 @@ def load_model():
     config = eval_dict_leaf(config)
 
     ckpt_root = "/work/piyush/pretrained_checkpoints/LargeModels/InternVideo/"
-    model_pth = os.path.join(ckpt_root, "InternVideo2-stage2_1b-224p-f4.pt")
+    model_pth = os.path.join(ckpt_root, ckpt_name)
     config['pretrained_path'] = model_pth
 
     # Had to set this to avoid loading separate vision checkpoint
