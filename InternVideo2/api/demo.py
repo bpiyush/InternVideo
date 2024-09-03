@@ -50,13 +50,27 @@ if __name__ == "__main__":
     # Load model
     config = Config.from_file('InternVideo2/multi_modality/demo/internvideo2_stage2_config.py')
     config = eval_dict_leaf(config)
+
     ckpt_root = "/work/piyush/pretrained_checkpoints/LargeModels/InternVideo/"
+    """
     model_pth = os.path.join(ckpt_root, "InternVideo2-stage2_1b-224p-f4.pt")
     config["model"]["vision_encoder"]["pretrained"] = model_pth
     # Define path to text encoder config
     text_encoder_config_path = os.path.join(repo_path, "configs/config_bert_large.json")
     assert os.path.exists(text_encoder_config_path)
     config['TextEncoders']['bert_large']['config'] = text_encoder_config_path
+    """
+    model_pth = os.path.join(ckpt_root, "InternVideo2-stage2_1b-224p-f4.pt")
+    config['pretrained_path'] = model_pth
+
+    # Had to set this to avoid loading separate vision checkpoint
+    config['model']['vision_encoder']['pretrained'] = None
+
+    # Had to set this to ensure correct config path
+    text_encoder_config_path = os.path.join(repo_path, "configs/config_bert_large.json")
+    assert os.path.exists(text_encoder_config_path)
+    config['TextEncoders']['bert_large']['config'] = text_encoder_config_path
+
     intern_model, tokenizer = setup_internvideo2(config)
     intern_model = intern_model.eval()
     num_params(intern_model)
