@@ -32,6 +32,42 @@ from multi_modality.demo.demo_utils import (
 from api.api_utils import load_model
 
 
+def video_check(sim):
+    """Computes video score."""
+    return (sim[0, 0] > sim[1, 0]) and (sim[1, 1] > sim[0, 1])
+
+
+def text_check(sim):
+    """Computes text score."""
+    return (sim[0, 0] > sim[0, 1]) and (sim[1, 1] > sim[1, 0])
+
+
+def group_check(sim):
+    return video_check(sim) and text_check(sim)
+
+
+def get_check_for_row(row):
+    id_a = row["id_a"]
+    video_path_a = ssv2.get_video_path_basic(id_a)
+    label_a = df_main[df_main.id == str(id_a)].iloc[0].label
+    df_main[df_main.id == id_a]
+
+    id_b = row["id_b"]
+    video_path_b = ssv2.get_video_path_basic(id_b)
+    label_b = df_main[df_main.id == str(id_b)].iloc[0].label
+
+    texts = [label_a, label_b]
+    frames = [[x for x in _frame_from_video(cv2.VideoCapture(y))] for y in [video_path_a, video_path_b]]
+    z_v, z_t = compute_video_text_features(
+        model=model, texts=texts, video_frames=frames, config=config,
+    )
+    sim = z_v @ z_t.T
+    vc = video_check(sim)
+    tc = text_check(sim)
+    gc = group_check(sim)
+    return dict(video_score=vc, text_score=tc, group_score=gc)
+
+
 if __name__ == "__main__":
     model, _, config = load_model()
 
@@ -48,22 +84,37 @@ if __name__ == "__main__":
     )
 
     # Evaluate on a single row
-    i = 0
-    row = df_pair.iloc[i].to_dict()
-    id_a = row["id_a"]
-    video_path_a = ssv2.get_video_path_basic(id_a)
-    label_a = df_main[df_main.id == str(id_a)].iloc[0].label
-    df_main[df_main.id == id_a]
+    debug = False
+    if debug:
+        i = 0
+        row = df_pair.iloc[i].to_dict()
+        id_a = row["id_a"]
+        video_path_a = ssv2.get_video_path_basic(id_a)
+        label_a = df_main[df_main.id == str(id_a)].iloc[0].label
+        df_main[df_main.id == id_a]
 
-    id_b = row["id_b"]
-    video_path_b = ssv2.get_video_path_basic(id_b)
-    label_b = df_main[df_main.id == str(id_b)].iloc[0].label
+        id_b = row["id_b"]
+        video_path_b = ssv2.get_video_path_basic(id_b)
+        label_b = df_main[df_main.id == str(id_b)].iloc[0].label
 
-    texts = [label_a, label_b]
-    frames = [[x for x in _frame_from_video(cv2.VideoCapture(y))] for y in [video_path_a, video_path_b]]
-    import ipdb; ipdb.set_trace()
-    z_v, z_t = compute_video_text_features(
-        model=model, texts=texts, video_frames=frames, config=config,
-    )
-    sim = z_v @ z_t.T
+        texts = [label_a, label_b]
+        frames = [[x for x in _frame_from_video(cv2.VideoCapture(y))] for y in [video_path_a, video_path_b]]
+        z_v, z_t = compute_video_text_features(
+            model=model, texts=texts, video_frames=frames, config=config,
+        )
+        sim = (z_v @ z_t.T).cpu().numpy()
+        vc = video_check(sim)
+        tc = text_check(sim)
+        gc = group_check(sim)
+        import ipdb; ipdb.set_trace()
     
+    # Run on entire dataset
+    import shared.utils as su
+    iterator = su.log.tqdm_iterator(range(len(df_pair)), desc="Evaluating")
+    scores = []
+    for i in iterator:
+        row = df_pair.iloc[i].to_dict()
+        _scores = get_check_for_row(row)
+        scores.append(_scores)
+    scores = pd.DataFrame(scores)
+    print(scores.mean())

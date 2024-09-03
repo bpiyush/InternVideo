@@ -132,7 +132,7 @@ def compute_video_text_features(
     with torch.no_grad():
         vid_feat = [vlm.get_vid_feat(f) for f in frames_tensor]
     vid_feat = torch.cat(vid_feat, 0)
-    print("Video feat mean: ", vid_feat.mean())
+    # print("Video feat mean: ", vid_feat.mean())
     # frames_tensor = torch.cat(frames_tensor, 0)
     # vid_feat = vlm.get_vid_feat(frames_tensor)
 
@@ -140,7 +140,7 @@ def compute_video_text_features(
     text_feat_d = get_text_feat_dict(texts, vlm, text_feat_d)
     text_feats = [text_feat_d[t] for t in texts]
     text_feats_tensor = torch.cat(text_feats, 0)
-    print("Text feat mean: ", text_feats_tensor.mean())
+    # print("Text feat mean: ", text_feats_tensor.mean())
 
     return vid_feat, text_feats_tensor
 
