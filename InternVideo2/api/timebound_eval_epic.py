@@ -50,6 +50,17 @@ def _frame_from_video(video, start_time=None, end_time=None):
         current_frame += 1
 
 
+def load_frames_decord(video_path, start_time=None, end_time=None, nf=8):
+    import decord
+    vr = decord.VideoReader(video_path)
+    fps = vr.get_avg_fps()
+    sf = int(start_time * fps) if start_time else 0
+    ef = int(end_time * fps) if end_time else len(vr)
+    indices = np.linspace(sf, ef, nf, endpoint=False).astype(int)
+    frames = vr.get_batch(indices).asnumpy()
+    return frames
+
+
 def video_check(sim):
     """Computes video score."""
     return (sim[0, 0] > sim[1, 0]) and (sim[1, 1] > sim[0, 1])
@@ -84,12 +95,15 @@ def get_check_for_row(row):
     end_b = row_b["stop_sec"]
 
     texts = [label_a, label_b]
-    # NOTE: only pick frames between start and end for each video
-    video_a = cv2.VideoCapture(video_path_a)
-    video_b = cv2.VideoCapture(video_path_b)
-    import ipdb; ipdb.set_trace()
-    frames_a = [x for x in _frame_from_video(video_a, start_a, end_a)]
-    frames_b = [x for x in _frame_from_video(video_b, start_b, end_b)]
+    frames_a = load_frames_decord(video_path_a, start_a, end_a)
+    frames_b = load_frames_decord(video_path_b, start_b, end_b)
+    # import ipdb; ipdb.set_trace()
+    # # NOTE: only pick frames between start and end for each video
+    # video_a = cv2.VideoCapture(video_path_a)
+    # video_b = cv2.VideoCapture(video_path_b)
+    # import ipdb; ipdb.set_trace()
+    # frames_a = [x for x in _frame_from_video(video_a, start_a, end_a)]
+    # frames_b = [x for x in _frame_from_video(video_b, start_b, end_b)]
     frames = [frames_a, frames_b]
     # frames = [
     #     [x for x in _frame_from_video(cv2.VideoCapture(y))] \
@@ -170,7 +184,6 @@ if __name__ == "__main__":
         row = df_pair.iloc[i].to_dict()
         result = get_check_for_row(row)
         print(result)
-
 
     # Run on entire dataset
     import shared.utils as su
