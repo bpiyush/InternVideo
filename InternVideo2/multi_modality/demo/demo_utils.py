@@ -145,6 +145,29 @@ def compute_video_text_features(
     return vid_feat, text_feats_tensor
 
 
+def get_video_features(video_frames, model, config: dict={}, device=torch.device('cuda')):
+    vlm = model
+    vlm = vlm.to(device)
+
+    frames = video_frames
+    fn = config.get('num_frames', 8)
+    tsize = config.get('size_t', 224)
+    frames_tensor = frames2tensor(frames, fnum=fn, target_size=(tsize, tsize), device=device)
+    vid_feat = vlm.get_vid_feat(frames_tensor)
+    return vid_feat
+
+
+def get_text_features(texts, model, device=torch.device('cuda')):
+    vlm = model
+    vlm = vlm.to(device)
+
+    text_feat_d = {}
+    text_feat_d = get_text_feat_dict(texts, vlm, text_feat_d)
+    text_feats = [text_feat_d[t] for t in texts]
+    text_feats_tensor = torch.cat(text_feats, 0)
+    return text_feats_tensor
+
+
 def setup_internvideo2(config: dict):
     if "bert" in config.model.text_encoder.name:
         tokenizer = BertTokenizer.from_pretrained(config.model.text_encoder.pretrained, local_files_only=False)
