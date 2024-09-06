@@ -113,4 +113,30 @@ if __name__ == "__main__":
         torch.save(video_features, video_features_path)
         torch.save(text_features, text_features_path)
 
-    import ipdb; ipdb.set_trace()
+    N = len(df_pair)
+    results = []
+    iterator = su.log.tqdm_iterator(range(N), desc="Evaluating")
+    for i in iterator:
+        row = df_pair.iloc[i].to_dict()
+        id_a = row["id_a"]
+        id_b = row["id_b"]
+        if id_a not in video_features or id_b not in video_features:
+            continue
+
+        vid_a = video_features[id_a]
+        vid_b = video_features[id_b]
+        txt_a = text_features[id_a]
+        txt_b = text_features[id_b]
+        vid = np.stack([vid_a, vid_b])
+        txt = np.stack([txt_a, txt_b])
+
+        sim = (vid @ txt.T)
+        r = get_scores(sim)
+        results.append(r)
+    results = pd.DataFrame(results)
+    print(results.mean())
+
+    # Save results
+    os.makedirs("results", exist_ok=True)
+    results.mean().to_csv("results/scores_char_internvideo2-s2.csv", index=False)
+

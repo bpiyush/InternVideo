@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     # Save results
     os.makedirs("results", exist_ok=True)
-    results.to_csv("results/scores_epic_internvideo2-s2.csv", index=False)
+    results.mean().to_csv("results/scores_epic_internvideo2-s2.csv", index=False)
         
     """
     # Evaluate on a single row
